@@ -1,0 +1,21 @@
+from read_file import read_all_subjects
+
+
+def load_data():
+    data = read_all_subjects()
+    X = []
+    A = []
+    DX = []
+    for d in data:
+        x = []
+        adj = []
+        dx = []
+        for i in range(len(d['node_feature'])):
+            x.append(d['node_feature'][i][:, 2])
+            adj.append(d['adjacency_matrix'][i])
+            dx.append(d['dx_label'][i])
+        X.append(x)
+        A.append(adj)
+        DX.append(dx)
+
+    return A, X, DX
