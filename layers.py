@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 from torch.nn.parameter import Parameter
 from torch.nn.modules.module import Module
+import torch.nn.functional as F
 import math
 
 
@@ -10,10 +11,12 @@ class GraphConvolution(Module):
     Simple GCN layer, similar to https://arxiv.org/abs/1609.02907
     """
 
-    def __init__(self, in_features, out_features, bias=True):
+    def __init__(self, in_features, out_features, dropout=0., bias=True, act=F.relu):
         super(GraphConvolution, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
+        self.dropout = dropout
+        self.act = act
         self.weight = Parameter(torch.FloatTensor(in_features, out_features))
         if bias:
             self.bias = Parameter(torch.FloatTensor(out_features).unsqueeze(dim=0))
@@ -28,12 +31,13 @@ class GraphConvolution(Module):
             self.bias.data.uniform_(-stdv, stdv)
 
     def forward(self, input, adj):
-        support = torch.mm(input, self.weight)
-        output = torch.einsum('ij,ijk->ik', [support, adj])
+        input = F.dropout(input, self.dropout, self.training)
+        support = torch.einsum('inf, fp -> inp', [input, self.weight])
+        output = torch.einsum('ijj,ijf->ijf', [adj, support])
         if self.bias is not None:
-            return output + self.bias
-        else:
-            return output
+            output = output + self.bias
+        output = self.act(output)
+        return output
 
     def __repr__(self):
         return self.__class__.__name__ + ' (' \

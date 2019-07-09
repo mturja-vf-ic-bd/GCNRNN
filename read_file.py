@@ -147,7 +147,7 @@ def read_all_subjects(data_type='all', net_dir=Args.NETWORK_DIR, label=None):
     return data_set
 
 
-def load_data(normalize=False, net_dir=Args.NETWORK_DIR, label=None):
+def get_baselines(normalize=False, net_dir=Args.NETWORK_DIR, label=None):
     data_set = read_all_subjects(net_dir=net_dir)
     network = []
     feature = []
@@ -157,9 +157,15 @@ def load_data(normalize=False, net_dir=Args.NETWORK_DIR, label=None):
         if not item["adjacency_matrix"]:
             continue
 
-        net = item["adjacency_matrix"][0]
+        net = item["adjacency_matrix"][0] * 10
+        net = (net + net.T) / 2
         if normalize:
-            net /= net.sum(axis=1)[:, np.newaxis]
+            D = np.diag(net.sum(axis=1)**(-0.5))
+            if np.isinf(D).any():
+                print("{} contains 0 rows".format(item["subject"]))
+                D[D == np.inf] = 0
+            net = np.dot(np.dot(D, net), D)
+
         network.append(net)
         feature.append(item["node_feature"][0])
         if label is None:
@@ -207,15 +213,4 @@ def get_strat_label():
     return y_strat
 
 
-if __name__ == '__main__':
-    # data_set = get_baselines()
-    # print(data_set)
-    # print(get_region_names())
-    # y = np.array([[1,3,2], [2,0,1], [1,1,1]])
-    # z = get_Kfold_multilabel(y)
-    # print(z)
-    header = ['subject', 'PTID', 'DX_bl', 'AGE', 'PTGENDER']
-    data = read_csv(header)
-    df = categorize_data(data, header)
-    y_strat = stratified_sampling_label(data, header)
-    print(len(y_strat), len(set(y_strat)))
+

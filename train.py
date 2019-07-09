@@ -73,11 +73,11 @@ def train(epoch, train_idx):
         loss.add_(F.nll_loss(output, dx))
 
     acc_train = accuracy(out_list, itemgetter(*train_idx)(labels))
-    if epoch%10==0:
+    if epoch%10 == 0:
         print("Train Accuracy", acc_train)
     loss.backward()
     optimizer.step()
-    #print('loss: {}'.format(loss.data))
+    # print('loss: {}'.format(loss.data))
 
     # if not args.fastmode:
     #     # Evaluate validation set performance separately,
